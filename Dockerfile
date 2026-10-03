@@ -1,0 +1,51 @@
+# syntax=docker/dockerfile:1
+
+# --- Stage 1: build a self-contained wheel + dependencies -------------------
+FROM python:3.12-slim AS builder
+
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_NO_CACHE_DIR=1
+
+WORKDIR /build
+
+COPY pyproject.toml README.md ./
+COPY app ./app
+
+# Build the wheel so runtime installs a real artifact, not a source tree.
+RUN pip install --upgrade pip build \
+    && python -m build --wheel --outdir /build/dist
+
+# --- Stage 2: runtime --------------------------------------------------------
+FROM python:3.12-slim AS runtime
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PATH="/home/app/.local/bin:$PATH"
+
+# Non-root user; no shell needed by the container itself.
+RUN groupadd --gid 1001 app \
+    && useradd --uid 1001 --gid 1001 --create-home --shell /usr/sbin/nologin app
+
+WORKDIR /app
+
+COPY --from=builder /build/dist/*.whl /tmp/
+RUN pip install --no-cache-dir /tmp/*.whl && rm -rf /tmp/*.whl
+
+# Runtime data (persisted index) lives here; mount a volume over it.
+RUN mkdir -p /app/data && chown -R app:app /app/data
+
+COPY --chown=app:app data/sample_docs /app/data/sample_docs
+COPY --chown=app:app docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+USER app
+
+EXPOSE 8000
+
+# Liveness probe against the endpoint the app actually serves.
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2).status == 200 else 1)"
+
+ENTRYPOINT ["/entrypoint.sh"]

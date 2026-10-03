@@ -1,0 +1,32 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ai-engineer-app:latest
+    container_name: ai-engineer-app
+    ports:
+      - "8000:8000"
+    environment:
+      APP_ENV: development
+      # Offline by default: no API key required to bring the stack up.
+      LLM_PROVIDER: ${LLM_PROVIDER:-echo}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_CHAT_MODEL: ${OPENAI_CHAT_MODEL:-gpt-4o-mini}
+      OPENAI_EMBEDDING_MODEL: ${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      LOG_FORMAT: json
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      SEED_ON_STARTUP: "true"
+      VECTOR_STORE_PATH: /app/data/vectorstore
+      RATE_LIMIT_PER_MINUTE: "120"
+    volumes:
+      # Persist the vector index across restarts.
+      - ./data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2).status == 200 else 1)"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
