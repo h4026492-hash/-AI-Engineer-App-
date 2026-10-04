@@ -44,8 +44,8 @@ class ChatResponse(BaseModel):
     answer: str
     citations: list[Citation] = Field(default_factory=list)
     grounded: bool = Field(
-        description="False when nothing scored above the relevance threshold, "
-        "meaning the answer was produced without retrieved evidence."
+        description="False when no retrieved evidence supports the response. This also "
+        "covers deterministic safety handoffs that bypass retrieval."
     )
     provider: Literal["echo", "openai"]
     latency_ms: float = Field(ge=0.0)

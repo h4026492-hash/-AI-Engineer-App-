@@ -18,8 +18,14 @@ does not import retrieval. Two consequences that pay off immediately:
   testable without a model.
 * Swapping a component is a change to one module, not a refactor.
 
-`app/core` holds cross-cutting concerns (logging, error types, middleware)
-that everyone may use but that use nothing back.
+`app/core` holds cross-cutting concerns (logging, error types, middleware) and
+prototype-specific deterministic health handoff rules. The single-page UI is
+served from `app/static/index.html` by the same FastAPI process, so browser calls
+remain same-origin and require no external scripts or services.
+
+The public demo is intentionally read-only. `ALLOW_DOCUMENT_MANAGEMENT` defaults
+to false and gates both ingestion and deletion; there is no authentication on
+those endpoints, so enabling it is for trusted local development only.
 
 ## The provider seam
 
@@ -99,6 +105,22 @@ Citation numbers in the prompt context and the `citations` array in the response
 are built from the same ordered list, so `[2]` in the answer always refers to
 `citations[1]`.
 
+## Health-domain safety boundary
+
+`app/core/medical_safety.py` screens a small set of obvious requests before
+retrieval. It returns a deterministic handoff for personal medication questions,
+individual lab-result interpretation, selected diagnosis requests, and acute
+emergency phrases tied to a person/current event. The emergency detection is
+not comprehensive and is not a triage system. The UI also displays emergency
+copy regardless of the query.
+
+Successful generated answers receive a fixed educational footer. Safety-gate
+responses have no retrieved citations and are reported with `grounded: false`.
+The offline `echo` provider selects text from context, but neither extractive
+answers, citations, retrieval scores, regex filters, nor unit tests establish
+clinical correctness or suitability. Keep the corpus narrow and treat this as a
+portfolio demo only.
+
 ## Streaming
 
 `POST /v1/chat/stream` emits `sources`, then `delta` events, then `done`.
@@ -138,11 +160,17 @@ human-readable for local work.
 
 Named so it is a known gap rather than a surprise:
 
-* **No authentication.** Add API-key or OAuth2 middleware before exposing this.
-* **In-process rate limiting and vector store.** Both correct for a single
-  replica, both wrong for a fleet.
-* **Synchronous ingestion.** Large documents should go through a task queue.
-* **No prompt injection defence** beyond the grounding instructions. Retrieved
-  document text is untrusted input; a document can contain instructions.
-* **No semantic evaluation.** The harness measures retrieval deterministically.
-  Judging answer quality needs an LLM judge with a rubric, or human review.
+* **No clinical validation.** This project must not be used to diagnose,
+  recommend treatment or dosing, interpret individual lab values, or check
+  personal drug interactions.
+* **No authentication or user accounts.** Document writes are off by default,
+  but the service is still only a demo; do not store or accept patient data.
+* **In-process rate limiting and vector store.** Both suitable only for a tiny
+  single-process demonstration, not a public healthcare service.
+* **Synchronous ingestion and no document upload/OCR.** Large documents should
+  go through a secured ingestion system only after an appropriate privacy review.
+* **No comprehensive prompt-injection or emergency detection.** The offline
+  provider is extractive, but a future hosted model and untrusted content would
+  require stronger defenses. Regex handoff rules are not a triage classifier.
+* **No clinical/semantic evaluation.** The harness measures retrieval
+  deterministically. It cannot prove medical accuracy, safety, or effectiveness.

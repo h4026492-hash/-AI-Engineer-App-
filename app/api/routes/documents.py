@@ -7,7 +7,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, status
 
 from app.api.deps import AppState, get_app_state
-from app.core.errors import NotFoundError, PayloadTooLargeError
+from app.core.errors import ForbiddenError, NotFoundError, PayloadTooLargeError
 from app.schemas.common import ApiResponse
 from app.schemas.documents import (
     DocumentIngestRequest,
@@ -36,6 +36,9 @@ async def ingest_document(
     payload: DocumentIngestRequest,
     state: Annotated[AppState, Depends(get_app_state)],
 ) -> ApiResponse[DocumentIngestResponse]:
+    if not state.settings.allow_document_management:
+        raise ForbiddenError("Document changes are disabled in this read-only demo.")
+
     limit = state.settings.max_ingest_chars
     if len(payload.content) > limit:
         raise PayloadTooLargeError(
@@ -93,6 +96,9 @@ async def delete_document(
     document_id: str,
     state: Annotated[AppState, Depends(get_app_state)],
 ) -> ApiResponse[dict[str, int | str]]:
+    if not state.settings.allow_document_management:
+        raise ForbiddenError("Document changes are disabled in this read-only demo.")
+
     removed = state.store.delete_document(document_id)
     if removed == 0:
         raise NotFoundError(

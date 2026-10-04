@@ -44,7 +44,7 @@ class Settings(BaseSettings):
     )
 
     # --- Application ---
-    app_name: str = "ai-engineer-app"
+    app_name: str = "Family MedGuard"
     app_env: Environment = Environment.DEVELOPMENT
     debug: bool = True
     host: str = "0.0.0.0"
@@ -78,6 +78,9 @@ class Settings(BaseSettings):
     max_ingest_chars: int = Field(default=200_000, ge=100)
     max_question_chars: int = Field(default=2000, ge=10)
     rate_limit_per_minute: int = Field(default=60, ge=0)
+    # Keep public demos read-only. Set true only for trusted local/admin use;
+    # the document endpoints do not provide authentication on their own.
+    allow_document_management: bool = False
 
     @field_validator("log_level")
     @classmethod
@@ -120,6 +123,7 @@ class Settings(BaseSettings):
                 "min_score": self.rag_min_score,
                 "embed_dim": self.rag_embed_dim,
             },
+            "allow_document_management": self.allow_document_management,
             "indexed_chunks": None,  # filled in by the caller from the live index
         }
 

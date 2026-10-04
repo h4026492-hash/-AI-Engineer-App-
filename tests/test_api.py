@@ -19,9 +19,15 @@ from tests.conftest import EMBED_DIM, json_envelope
 # --- Operational -----------------------------------------------------------
 
 
-def test_root_reports_service_info(client: TestClient) -> None:
-    body = client.get("/").json()
-    assert body["name"] == "ai-engineer-app"
+def test_root_serves_web_demo_and_service_info(client: TestClient) -> None:
+    page = client.get("/")
+    assert page.status_code == 200
+    assert page.headers["content-type"].startswith("text/html")
+    assert "Family MedGuard" in page.text
+    assert 'id="workspace"' in page.text
+
+    body = client.get("/service-info").json()
+    assert body["name"] == "Family MedGuard"
     assert body["provider"] == "echo"
     assert body["offline_mode"] is True
     assert body["docs"] == "/docs"
@@ -51,6 +57,12 @@ def test_request_id_is_generated_and_honoured(client: TestClient) -> None:
     # The same id must appear in the error envelope for that request.
     failure = client.delete("/v1/documents/nope", headers={"X-Request-ID": "trace-me-456"})
     assert failure.json()["request_id"] == "trace-me-456"
+
+
+def test_document_management_defaults_to_disabled() -> None:
+    settings = Settings(_env_file=None)  # type: ignore[call-arg]
+    assert settings.allow_document_management is False
+    assert settings.public_config()["allow_document_management"] is False
 
 
 def test_config_redacts_secrets(client: TestClient) -> None:
@@ -193,6 +205,72 @@ def test_chat_returns_a_grounded_answer_with_citations(client: TestClient) -> No
     assert body["meta"]["retrieved_chunks"] == len(data["citations"])
 
 
+def test_chat_includes_educational_footer(client: TestClient) -> None:
+    data = json_envelope(
+        client.post("/v1/chat", json={"question": "What is the refund policy?"}).json()
+    )["data"]
+    assert "Educational information only" in data["answer"]
+
+
+def test_personal_medication_question_is_routed_to_safety_gate(client: TestClient) -> None:
+    response = client.post("/v1/chat", json={"question": "Can I take ibuprofen with warfarin?"})
+    assert response.status_code == 200
+    body = json_envelope(response.json())
+    assert body["data"]["grounded"] is False
+    assert body["data"]["citations"] == []
+    assert "can't check whether a medicine is safe" in body["data"]["answer"]
+    assert body["meta"]["model"] == "safety-gate"
+
+
+def test_general_dose_request_is_routed_to_safety_gate(client: TestClient) -> None:
+    data = json_envelope(
+        client.post(
+            "/v1/chat", json={"question": "What dose of acetaminophen should a child take?"}
+        ).json()
+    )["data"]
+    assert data["grounded"] is False
+    assert "recommend a dose" in data["answer"]
+
+
+def test_named_medicine_interaction_is_routed_to_safety_gate(client: TestClient) -> None:
+    data = json_envelope(
+        client.post("/v1/chat", json={"question": "Can ibuprofen be used with warfarin?"}).json()
+    )["data"]
+    assert data["grounded"] is False
+    assert "compare personal drug interactions" in data["answer"]
+
+
+def test_personal_lab_question_is_routed_to_safety_gate(client: TestClient) -> None:
+    data = json_envelope(
+        client.post("/v1/chat", json={"question": "Can you interpret my CBC test result?"}).json()
+    )["data"]
+    assert data["grounded"] is False
+    assert "can't diagnose or interpret" in data["answer"]
+
+
+def test_current_emergency_terms_get_immediate_handoff(client: TestClient) -> None:
+    data = json_envelope(
+        client.post("/v1/chat", json={"question": "I am having chest pain right now"}).json()
+    )["data"]
+    assert data["grounded"] is False
+    assert "call 911" in data["answer"]
+    assert "do not wait" in data["answer"]
+
+
+def test_public_read_only_mode_blocks_document_changes(client: TestClient) -> None:
+    client.app.state.app_state.settings.allow_document_management = False
+    response = client.post(
+        "/v1/documents", json={"content": "A demo document.", "source": "demo.md"}
+    )
+    assert response.status_code == 403
+    assert response.json()["error"]["code"] == "forbidden"
+
+    document_id = client.app.state.app_state.store.documents()[0].document_id
+    deletion = client.delete(f"/v1/documents/{document_id}")
+    assert deletion.status_code == 403
+    assert deletion.json()["error"]["code"] == "forbidden"
+
+
 def test_chat_can_omit_context_text(client: TestClient) -> None:
     data = json_envelope(
         client.post("/v1/chat", json={"question": "refund policy", "include_context": False}).json()
@@ -275,6 +353,19 @@ def test_chat_stream_emits_ordered_sse_events(client: TestClient) -> None:
     assert "30 days" in done["answer"]
 
 
+def test_chat_stream_hands_personal_medication_questions_to_safety_gate(client: TestClient) -> None:
+    with client.stream(
+        "POST",
+        "/v1/chat/stream",
+        json={"question": "Can I take this medicine with my other prescription?"},
+    ) as response:
+        events = parse_sse("".join(response.iter_text()))
+
+    assert [name for name, _ in events] == ["sources", "delta", "done"]
+    assert events[0][1]["grounded"] is False
+    assert "pharmacist" in events[-1][1]["answer"]
+
+
 def test_chat_stream_validates_before_opening_the_stream(client: TestClient) -> None:
     # Guardrails run first, so a bad request is a plain 422, not a stream.
     response = client.post("/v1/chat/stream", json={"question": "  "})
@@ -346,6 +437,21 @@ def test_seeding_indexes_only_markdown_and_text_with_content(sample_docs_dir: Pa
 
     assert asyncio.run(seed_sample_documents(pipeline, sample_docs_dir)) == 2
     assert sorted(doc.source for doc in pipeline.store.documents()) == ["refunds.md", "security.md"]
+
+
+def test_seeding_attaches_public_source_metadata(tmp_path: Path, pipeline: RAGPipeline) -> None:
+    directory = tmp_path / "health_docs"
+    directory.mkdir()
+    (directory / "lab-results.md").write_text(
+        "Reference ranges differ between labs.", encoding="utf-8"
+    )
+
+    assert asyncio.run(seed_sample_documents(pipeline, directory)) == 1
+    document = pipeline.store.documents()[0]
+    assert document.metadata["publisher"] == "MedlinePlus / U.S. National Library of Medicine"
+    assert document.metadata["source_url"] == (
+        "https://medlineplus.gov/lab-tests/how-to-understand-your-lab-results/"
+    )
 
 
 def test_seeding_a_missing_directory_is_a_noop(tmp_path: Path) -> None:

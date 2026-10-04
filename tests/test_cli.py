@@ -54,7 +54,7 @@ def test_docs_reports_an_empty_index(capsys: pytest.CaptureFixture[str]) -> None
 def test_seed_indexes_sample_documents(capsys: pytest.CaptureFixture[str]) -> None:
     assert main(["seed"]) == 0
     payload = json.loads(capsys.readouterr().out)
-    assert payload["seeded_documents"] == 3, "refunds.md, security.md, api-guide.md"
+    assert payload["seeded_documents"] == 2, "lab-results.md and medication-safety.md"
     assert payload["indexed_chunks"] > 0
 
 
@@ -62,13 +62,13 @@ def test_ask_returns_a_grounded_answer_with_citations(capsys: pytest.CaptureFixt
     main(["seed"])
     capsys.readouterr()
 
-    assert main(["ask", "How long do I have to request a refund?"]) == 0
+    assert main(["ask", "What might an out-of-range lab test result mean?"]) == 0
     payload = json.loads(capsys.readouterr().out)
 
     assert payload["grounded"] is True
     assert payload["citations"]
-    assert payload["citations"][0]["source"] == "refunds.md"
-    assert "30 days" in payload["answer"]
+    assert payload["citations"][0]["source"] == "lab-results.md"
+    assert "outside the range" in payload["answer"] or "reference range" in payload["answer"]
     assert payload["latency_ms"] >= 0.0
 
 
@@ -93,11 +93,14 @@ def test_search_returns_scored_chunks(capsys: pytest.CaptureFixture[str]) -> Non
     main(["seed"])
     capsys.readouterr()
 
-    assert main(["search", "How is data encrypted at rest?", "--top-k", "3"]) == 0
+    assert (
+        main(["search", "Why tell a pharmacist about medicines and supplements?", "--top-k", "3"])
+        == 0
+    )
     hits = json.loads(capsys.readouterr().out)
 
     assert hits
-    assert hits[0]["source"] == "security.md"
+    assert hits[0]["source"] == "medication-safety.md"
     assert all(0.0 <= hit["score"] <= 1.0 for hit in hits)
 
 
@@ -109,7 +112,7 @@ def test_seed_then_docs_shows_the_persisted_index(capsys: pytest.CaptureFixture[
     payload = json.loads(capsys.readouterr().out)
 
     sources = sorted(doc["source"] for doc in payload["documents"])
-    assert sources == ["api-guide.md", "refunds.md", "security.md"]
+    assert sources == ["lab-results.md", "medication-safety.md"]
     assert payload["chunks"] > 0
 
 

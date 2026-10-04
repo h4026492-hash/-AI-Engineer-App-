@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# End-to-end walkthrough against a real server: boots one, exercises every
-# endpoint, then shuts it down. Run with `make demo`.
+# End-to-end walkthrough against a local server: boots one, exercises endpoints,
+# then shuts it down. Run with `make demo` from a trusted development machine.
 set -euo pipefail
 
 PORT="${PORT:-8000}"
@@ -25,8 +25,10 @@ cleanup() {
 }
 trap cleanup EXIT
 
-section "Starting server on ${BASE}"
-SEED_ON_STARTUP=true "$PYTHON" -m uvicorn app.main:app --host "$HOST" --port "$PORT" --log-level warning &
+section "Starting local demo server on ${BASE}"
+# This local walkthrough enables the otherwise-disabled write API to exercise
+# ingestion. Never use ALLOW_DOCUMENT_MANAGEMENT=true on a public deployment.
+ALLOW_DOCUMENT_MANAGEMENT=true SEED_ON_STARTUP=true "$PYTHON" -m uvicorn app.main:app --host "$HOST" --port "$PORT" --log-level warning &
 SERVER_PID=$!
 
 for _ in $(seq 1 40); do
@@ -43,43 +45,43 @@ printf "%sServer ready%s\n" "$GREEN" "$RESET"
 section "GET /health"
 curl -sf "${BASE}/health" | $PRETTY
 
-section "GET /v1/config  (secrets redacted)"
-curl -sf "${BASE}/v1/config" | $PRETTY
+section "GET /service-info"
+curl -sf "${BASE}/service-info" | $PRETTY
 
-section "GET /v1/documents  (auto-seeded corpus)"
+section "GET /v1/documents  (auto-seeded public reference corpus)"
 curl -sf "${BASE}/v1/documents" | $PRETTY
 
-section "POST /v1/documents  (ingest a new document)"
+section "POST /v1/documents  (synthetic, trusted local-only example)"
 curl -sf -X POST "${BASE}/v1/documents" \
   -H 'Content-Type: application/json' \
   -d '{
-        "content": "Password resets are requested from the login screen. Reset links expire after 30 minutes and can be used only once.",
-        "source": "handbook/passwords.md",
-        "metadata": {"team": "support"}
+        "content": "Demo reference note: the public library information desk is open Monday through Friday, 9 a.m. to 5 p.m.",
+        "source": "demo/library-hours.md",
+        "metadata": {"synthetic": true}
       }' | $PRETTY
 
 section "POST /v1/search  (retrieval only, with scores)"
 curl -sf -X POST "${BASE}/v1/search" \
   -H 'Content-Type: application/json' \
-  -d '{"query": "How long is a password reset link valid?", "top_k": 3}' | $PRETTY
+  -d '{"query": "What does an out-of-range lab result mean?", "top_k": 3}' | $PRETTY
 
-section "POST /v1/chat  (grounded answer with citations)"
+section "POST /v1/chat  (grounded general explanation with citations)"
 curl -sf -X POST "${BASE}/v1/chat" \
   -H 'Content-Type: application/json' \
-  -d '{"question": "How long is a password reset link valid?", "top_k": 3}' | $PRETTY
+  -d '{"question": "What does an out-of-range lab result mean in general?", "top_k": 3}' | $PRETTY
 
-section "POST /v1/chat  (a question the corpus cannot answer)"
+section "POST /v1/chat  (personal medication handoff)"
 curl -sf -X POST "${BASE}/v1/chat" \
   -H 'Content-Type: application/json' \
-  -d '{"question": "What is the CEO favourite colour?"}' | $PRETTY
+  -d '{"question": "Can I take this medicine with my other prescription?"}' | $PRETTY
 
 section "POST /v1/chat/stream  (Server-Sent Events)"
 curl -sfN -X POST "${BASE}/v1/chat/stream" \
   -H 'Content-Type: application/json' \
-  -d '{"question": "What are the rate limits for the Pro plan?"}'
+  -d '{"question": "Why should someone tell a pharmacist about supplements?"}'
 
-section "Error envelope  (unknown document)"
-curl -s -o /dev/null -w "status=%{http_code}\n" -X DELETE "${BASE}/v1/documents/does-not-exist"
-curl -s -X DELETE "${BASE}/v1/documents/does-not-exist" | $PRETTY
+section "Public-deployment reminder"
+show "Document changes default to disabled. This local script enabled them only to demonstrate ingestion."
+show "Keep ALLOW_DOCUMENT_MANAGEMENT=false on any internet-facing demo."
 
 printf "\n%sDemo complete.%s\n" "$GREEN" "$RESET"

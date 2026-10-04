@@ -1,57 +1,37 @@
 {
-  "description": "Retrieval golden set for the bundled sample corpus. Each case lists the sources a correct retrieval must surface; the harness measures top-1 accuracy and mean reciprocal rank (MRR).",
+  "description": "Retrieval checks for the public-source health education demo. Each case names the expected source; this measures retrieval, not clinical safety or answer correctness.",
   "corpus": "data/sample_docs",
   "top_k": 5,
   "cases": [
     {
-      "id": "refund-window",
-      "question": "How long do I have to request a refund?",
-      "expected_sources": ["refunds.md"]
+      "id": "out-of-range-result",
+      "question": "What might an out-of-range lab test result mean?",
+      "expected_sources": ["lab-results.md"]
     },
     {
-      "id": "refund-annual",
-      "question": "Can I get money back on an annual plan after two weeks?",
-      "expected_sources": ["refunds.md"]
+      "id": "reference-range-variation",
+      "question": "Why can reference ranges differ between laboratories?",
+      "expected_sources": ["lab-results.md"]
     },
     {
-      "id": "failed-payment",
-      "question": "What happens when my card payment fails?",
-      "expected_sources": ["refunds.md"]
+      "id": "lab-context",
+      "question": "Why should a health care provider consider symptoms and medical history along with lab results?",
+      "expected_sources": ["lab-results.md"]
     },
     {
-      "id": "encryption-at-rest",
-      "question": "How is data encrypted at rest?",
-      "expected_sources": ["security.md"]
+      "id": "label-sections",
+      "question": "What information is on a nonprescription medicine label?",
+      "expected_sources": ["medication-safety.md"]
     },
     {
-      "id": "sso-availability",
-      "question": "Which plans include SAML single sign-on?",
-      "expected_sources": ["security.md"]
+      "id": "medicine-list",
+      "question": "Why tell a pharmacist about all medicines and supplements?",
+      "expected_sources": ["medication-safety.md"]
     },
     {
-      "id": "data-residency",
-      "question": "Where is customer data stored and can it leave the region?",
-      "expected_sources": ["security.md"]
-    },
-    {
-      "id": "rate-limit-pro",
-      "question": "How many requests per minute does the Pro plan allow?",
-      "expected_sources": ["api-guide.md"]
-    },
-    {
-      "id": "pagination",
-      "question": "How do I paginate through a list endpoint?",
-      "expected_sources": ["api-guide.md"]
-    },
-    {
-      "id": "webhook-signature",
-      "question": "How do I verify that a webhook really came from you?",
-      "expected_sources": ["api-guide.md"]
-    },
-    {
-      "id": "incident-notification",
-      "question": "How quickly are customers told about a security incident?",
-      "expected_sources": ["security.md"]
+      "id": "missed-dose-question",
+      "question": "Who can answer what to do after a missed dose?",
+      "expected_sources": ["medication-safety.md"]
     }
   ]
 }

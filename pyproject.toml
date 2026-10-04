@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ai-engineer-app"
-version = "0.1.0"
-description = "Production-shaped RAG chat service: FastAPI + pluggable LLM providers + retrieval, with tests, evals, and CI."
+version = "0.2.0"
+description = "Offline, source-grounded plain-language health education demo built with FastAPI and RAG."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
