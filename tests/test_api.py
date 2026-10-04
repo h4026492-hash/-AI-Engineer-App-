@@ -25,12 +25,22 @@ def test_root_serves_web_demo_and_service_info(client: TestClient) -> None:
     assert page.headers["content-type"].startswith("text/html")
     assert "Family MedGuard" in page.text
     assert 'id="workspace"' in page.text
+    assert 'id="profileDemoStrip" hidden' in page.text
+    assert 'id="demoProfileSelect"' in page.text
+    assert 'id="clearDemoSession"' in page.text
+    assert "Demo Person A" in page.text and "Demo Person B" in page.text
+    assert "localStorage" not in page.text and "sessionStorage" not in page.text
+    assert "document.cookie" not in page.text
+    assert "log.replaceChildren(welcomeMessage.cloneNode(true))" in page.text
+    assert "JSON.stringify({ question, top_k: 2, include_context: false })" in page.text
+    assert "const sourceLinks = new Map();" in page.text
 
     body = client.get("/service-info").json()
     assert body["name"] == "Family MedGuard"
     assert body["provider"] == "echo"
     assert body["offline_mode"] is True
     assert body["local_document_ocr_available"] is False
+    assert body["local_synthetic_profiles_available"] is False
     assert body["docs"] == "/docs"
 
 
@@ -208,6 +218,43 @@ def test_chat_returns_a_grounded_answer_with_citations(client: TestClient) -> No
     assert data["latency_ms"] >= 0.0
     assert data["tokens_in"] > 0
     assert body["meta"]["retrieved_chunks"] == len(data["citations"])
+
+
+def test_sample_lab_answer_uses_only_lab_citations(tmp_path: Path) -> None:
+    settings = Settings(
+        _env_file=None,  # type: ignore[call-arg]
+        log_level="WARNING",
+        llm_provider="echo",
+        rag_embed_dim=512,
+        rag_top_k=2,
+        vector_store_path=str(tmp_path / "vectorstore"),
+        seed_on_startup=True,
+        rate_limit_per_minute=0,
+    )
+    with TestClient(create_app(settings)) as sample_client:
+        response = sample_client.post(
+            "/v1/chat",
+            json={
+                "question": "What does an out-of-range lab result mean in general?",
+                "top_k": 2,
+                "include_context": False,
+            },
+        )
+
+    assert response.status_code == 200
+    citations = response.json()["data"]["citations"]
+    assert citations
+    assert {citation["source"] for citation in citations} == {"lab-results.md"}
+
+
+def test_chat_rejects_profile_metadata(client: TestClient) -> None:
+    response = client.post(
+        "/v1/chat",
+        json={"question": "What does a reference range mean?", "profile_id": "demo-a"},
+    )
+
+    assert response.status_code == 422
+    assert "profile_id" in response.text
 
 
 def test_chat_includes_educational_footer(client: TestClient) -> None:

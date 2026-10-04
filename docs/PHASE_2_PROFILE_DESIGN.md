@@ -1,9 +1,15 @@
 # Phase 2 design: family profiles and conversation continuity
 
-**Status: design only.** This document does not add a profile API, database,
-account system, or personalized health behavior. The next prototype should use
-synthetic demo data only. Do not enter real names, dates of birth, medication
-lists, diagnoses, or individual lab values.
+**Status: Phase 2A synthetic UX prototype implemented and locally validated.**
+The feature branch adds only the selector described here: two fixed fictional
+labels, volatile browser state, a clear-session action, and a conversation reset
+when switching. The selector is shown only for loopback development requests
+with the offline answer engine; it is hidden on public/hosted deployments. There
+is no profile API, database, account system, or personalized health behavior.
+
+The design below remains the gate for any future persistent profiles. Do not
+enter real names, dates of birth, medication lists, diagnoses, or individual lab
+values.
 
 Family MedGuard is an early educational prototype, not a clinical service, a
 medical device, or a HIPAA-compliant system. This design is not legal, clinical,
@@ -21,6 +27,8 @@ system.
 
 - Use a fixed set of obviously fictional profiles such as **Demo Person A** and
   **Demo Person B**. Do not allow free-text profile creation.
+- Show the selector only in local development on a loopback host with the
+  offline answer engine; hide it when hosted or in production.
 - Keep the selected demo profile and any demo conversation state in volatile
   memory only. Clear them on reset, tab close, or page refresh.
 - Do not use `localStorage`, `sessionStorage`, cookies, a database, the vector
@@ -126,6 +134,8 @@ the profile feature.
 
 - Only fixed synthetic profile labels are available; there is no profile-entry
   form.
+- The selector is hidden unless the app is in development, the client/host are
+  loopback, and the provider is the offline echo engine.
 - A visible warning identifies the profile as synthetic and forbids real health
   information.
 - Profile selection is not persisted in local/session storage, cookies, the
@@ -141,7 +151,7 @@ the profile feature.
 - Documentation explicitly says the feature is a synthetic UX experiment and
   not suitable for real patient information.
 
-## Open decisions before implementation
+## Open decisions before any real profiles
 
 - Which user problem should profiles solve that cannot be solved by separate
   browser sessions?

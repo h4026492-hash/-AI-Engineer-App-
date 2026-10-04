@@ -20,7 +20,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from app import __version__
 from app.api.deps import AppState
 from app.api.routes import chat, documents, health, local_ocr
-from app.config import Settings, get_settings
+from app.config import Environment, Settings, get_settings
 from app.core.errors import register_exception_handlers
 from app.core.logging import configure_logging, get_logger
 from app.core.middleware import RateLimitMiddleware, RequestContextMiddleware
@@ -176,6 +176,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "offline_mode": state.offline,
                 "indexed_chunks": len(state.store),
                 "local_document_ocr_available": local_ocr.is_local_ocr_request(request, state),
+                "local_synthetic_profiles_available": (
+                    settings.app_env is Environment.DEVELOPMENT
+                    and state.offline
+                    and local_ocr.is_loopback_request(request)
+                ),
                 "docs": "/docs",
                 "health": "/health",
                 "mode": (

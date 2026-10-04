@@ -17,6 +17,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Public launch checklist and health-domain retrieval evaluation cases.
 - Opt-in, localhost-only OCR preview for synthetic PDFs and images; outputs raw
   text only and do not enter the RAG index or model context.
+- Synthetic-only profile selector with two fixed fictional labels; profile choice
+  stays in browser memory, never enters API requests, and clears the visible
+  transcript and OCR preview when switched.
 
 ### Changed
 - App branding and default service metadata now identify Family MedGuard.
@@ -28,8 +31,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   education demo.
 - Added an explicit NumPy typing cast so strict type checking also passes with
   current NumPy and mypy versions.
+- Deduplicated citation links in the UI, limited the demo chat to two retrieved
+  chunks, and filtered Markdown section headings from offline answers.
 
 ### Safety
+- The profile selector is a synthetic UX experiment only; it adds no profile
+  fields, backend storage, accounts, or personalization.
 - OCR is opt-in and allowed only for development requests whose host and peer
   are both loopback. It reads bounded input in memory, does not log document
   text, does not persist or index it, and never calls a language model.
