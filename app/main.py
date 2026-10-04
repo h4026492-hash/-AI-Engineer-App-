@@ -13,13 +13,13 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 
 from app import __version__
 from app.api.deps import AppState
-from app.api.routes import chat, documents, health
+from app.api.routes import chat, documents, health, local_ocr
 from app.config import Settings, get_settings
 from app.core.errors import register_exception_handlers
 from app.core.logging import configure_logging, get_logger
@@ -156,6 +156,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     register_exception_handlers(app)
     app.include_router(health.router)
     app.include_router(documents.router)
+    app.include_router(local_ocr.router)
     app.include_router(chat.router)
 
     @app.get("/", include_in_schema=False)
@@ -164,7 +165,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return FileResponse(Path(__file__).parent / "static" / "index.html", media_type="text/html")
 
     @app.get("/service-info", tags=["operational"], summary="Non-sensitive service information")
-    async def service_info() -> JSONResponse:
+    async def service_info(request: Request) -> JSONResponse:
         state: AppState = app.state.app_state
         return JSONResponse(
             {
@@ -174,6 +175,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "provider": state.provider,
                 "offline_mode": state.offline,
                 "indexed_chunks": len(state.store),
+                "local_document_ocr_available": local_ocr.is_local_ocr_request(request, state),
                 "docs": "/docs",
                 "health": "/health",
                 "mode": (

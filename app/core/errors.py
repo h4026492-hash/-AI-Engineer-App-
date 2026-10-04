@@ -59,6 +59,20 @@ class PayloadTooLargeError(AppError):
     code = "payload_too_large"
 
 
+class UnsupportedMediaTypeError(AppError):
+    """The uploaded content type is not accepted by this endpoint."""
+
+    status_code = 415
+    code = "unsupported_media_type"
+
+
+class ServiceUnavailableError(AppError):
+    """A locally configured optional capability is not available."""
+
+    status_code = 503
+    code = "service_unavailable"
+
+
 class RateLimitError(AppError):
     """Too many requests from this client."""
 

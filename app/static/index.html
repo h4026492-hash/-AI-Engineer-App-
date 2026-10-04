@@ -161,6 +161,19 @@
     .form-footnote strong { color: var(--rose); }
     .emergency-strip { display: flex; gap: 12px; align-items: flex-start; margin: 18px 0 0; border: 1px solid #f0cfbe; border-radius: 14px; background: var(--rose-pale); padding: 13px 15px; color: #7a352d; font-size: 13px; }
     .emergency-strip strong { color: #6d271f; }
+    .local-ocr-section { margin-bottom: 74px; border: 1px solid #cbded0; border-radius: var(--radius); background: var(--paper); padding: 25px; box-shadow: var(--shadow); }
+    .local-ocr-section[hidden] { display: none !important; }
+    .ocr-notice { max-width: 900px; margin: 12px 0 18px; border-left: 4px solid var(--gold); border-radius: 0 10px 10px 0; background: var(--gold-pale); padding: 12px 15px; color: #624a21; font-size: 13px; }
+    .ocr-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; }
+    .ocr-file-wrap { display: grid; gap: 6px; min-width: min(100%, 340px); color: var(--ink-2); font-size: 13px; font-weight: 750; }
+    .ocr-file-wrap input { max-width: 100%; border: 1px solid var(--line); border-radius: 9px; background: white; padding: 9px; color: var(--ink-2); font-weight: 500; }
+    .ocr-controls button { min-height: 45px; }
+    .ocr-controls button:disabled { opacity: .58; cursor: wait; }
+    .ocr-status { min-height: 1.5em; margin: 12px 0 0; color: var(--ink-2); font-size: 13px; }
+    .ocr-results { margin-top: 14px; }
+    .ocr-page { margin-top: 12px; border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: #fbfcfa; }
+    .ocr-page h3 { margin: 0 0 8px; color: var(--ink-2); font-size: 13px; }
+    .ocr-page pre { max-height: 360px; overflow: auto; margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink); font: inherit; font-size: 13px; }
     .sources-section { padding: 0 0 78px; scroll-margin-top: 28px; }
     .source-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 22px; }
     .source-card { display: flex; align-items: flex-start; gap: 15px; border: 1px solid var(--line); border-radius: 17px; background: var(--paper); padding: 19px; text-decoration: none; box-shadow: 0 10px 28px rgba(23,59,52,.045); transition: transform .15s, border-color .15s; }
@@ -212,6 +225,9 @@
       .api-link { display: inline-block; margin-top: 11px; }
       .form-footnote { display: block; }
       .form-footnote span { display: block; margin-top: 2px; }
+      .local-ocr-section { padding: 18px; margin-bottom: 56px; }
+      .ocr-controls { align-items: stretch; }
+      .ocr-controls .button-primary, .ocr-controls .text-toggle { width: 100%; }
     }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
@@ -242,7 +258,7 @@
         <p>Explore plain-language explanations of general health topics, grounded in trusted public sources. Your care decisions belong with you and your health care team.</p>
         <div class="hero-cta">
           <a class="button-primary" href="#workspace">Try the demo <svg width="17" height="17" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3.5 10h12m-5-5 5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
-          <span class="privacy-line">No sign-in · no file uploads</span>
+          <span class="privacy-line">No sign-in · public demo has no uploads</span>
         </div>
         <div class="hero-points" aria-label="Demo features">
           <span class="point"><svg width="17" height="17" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m4.5 10.5 3.2 3.1 7.8-7.7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Source-linked</span>
@@ -312,6 +328,27 @@
       <div class="emergency-strip" role="note"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 2.2 18 16H2l8-13.8Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M10 7v4.4m0 2.2v.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span><strong>Possible emergency?</strong> Call 911 (or your local emergency number) now. This demo is not monitored and cannot assess urgent symptoms.</span></div>
     </section>
 
+    <section class="container local-ocr-section" id="localOcrSection" hidden aria-labelledby="localOcrTitle">
+      <span class="section-kicker">Local development only</span>
+      <h2 class="section-title" id="localOcrTitle">Preview text from a PDF or photo</h2>
+      <p class="section-intro">This extracts text only. It does not interpret lab results, identify medicines, or give medical advice.</p>
+      <div class="ocr-notice" role="note"><strong>Privacy and accuracy:</strong> This panel appears only when the app is explicitly enabled in development and opened through localhost. The file is processed by this local server in memory; the app does not save it, add it to the search index, or send it to a language model. Do not enable this on a public server or upload real patient records to this prototype. OCR can misread medication names, dates, digits, units, and decimal points. Check every character against the original and ask a qualified health professional about personal results.</div>
+      <form id="ocrForm">
+        <div class="ocr-controls">
+          <label class="ocr-file-wrap" for="ocrFile">Choose a PDF, PNG, or JPEG (8 MiB max)
+            <input id="ocrFile" type="file" accept="application/pdf,image/png,image/jpeg,.pdf,.png,.jpg,.jpeg" required>
+          </label>
+          <button class="button-primary" id="ocrButton" type="submit">Extract text</button>
+          <button class="text-toggle" id="clearOcrButton" type="button">Clear preview</button>
+        </div>
+      </form>
+      <p class="ocr-status" id="ocrStatus" role="status" aria-live="polite"></p>
+      <div class="ocr-results" id="ocrResults" hidden>
+        <p class="panel-eyebrow" id="ocrSummary"></p>
+        <div id="ocrPages"></div>
+      </div>
+    </section>
+
     <section class="container sources-section" id="sources" aria-labelledby="sources-title">
       <div class="section-heading">
         <div><span class="section-kicker">Evidence first</span><h2 class="section-title" id="sources-title">Public sources behind this demo</h2></div>
@@ -347,6 +384,14 @@
       const sendButton = document.getElementById('sendButton');
       const count = document.getElementById('charCount');
       const textToggle = document.getElementById('textToggle');
+      const ocrForm = document.getElementById('ocrForm');
+      const ocrFile = document.getElementById('ocrFile');
+      const ocrButton = document.getElementById('ocrButton');
+      const ocrStatus = document.getElementById('ocrStatus');
+      const ocrResults = document.getElementById('ocrResults');
+      const ocrSummary = document.getElementById('ocrSummary');
+      const ocrPages = document.getElementById('ocrPages');
+      const clearOcrButton = document.getElementById('clearOcrButton');
 
       const escapeSourceUrl = (value) => {
         try {
@@ -508,6 +553,87 @@
         }
       });
 
+      function clearOcrPreview() {
+        ocrFile.value = '';
+        ocrPages.replaceChildren();
+        ocrSummary.textContent = '';
+        ocrResults.hidden = true;
+        ocrStatus.textContent = '';
+      }
+
+      clearOcrButton.addEventListener('click', () => {
+        clearOcrPreview();
+        ocrFile.focus();
+      });
+
+      ocrForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const file = ocrFile.files && ocrFile.files[0];
+        if (!file) {
+          ocrStatus.textContent = 'Choose a PDF, PNG, or JPEG file first.';
+          ocrFile.focus();
+          return;
+        }
+        if (file.size > 8 * 1024 * 1024) {
+          ocrStatus.textContent = 'This file is larger than the 8 MiB limit.';
+          return;
+        }
+        const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg'];
+        if (file.type && !allowedTypes.includes(file.type)) {
+          ocrStatus.textContent = 'Choose a PDF, PNG, or JPEG file.';
+          return;
+        }
+
+        ocrPages.replaceChildren();
+        ocrSummary.textContent = '';
+        ocrResults.hidden = true;
+        ocrStatus.textContent = 'Extracting text locally…';
+        ocrButton.disabled = true;
+        clearOcrButton.disabled = true;
+        try {
+          const response = await fetch('/v1/local/ocr-preview', {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': file.type || 'application/octet-stream'
+            },
+            body: file
+          });
+          const body = await response.json();
+          if (!response.ok) {
+            const message = body && body.error && body.error.message
+              ? body.error.message
+              : 'The local extraction could not be completed.';
+            throw new Error(message);
+          }
+          const data = body.data || {};
+          const pages = Array.isArray(data.pages) ? data.pages : [];
+          ocrSummary.textContent = `${pages.length} page${pages.length === 1 ? '' : 's'} · ${(data.character_count || 0).toLocaleString()} characters${data.truncated ? ' · output shortened' : ''}`;
+          pages.forEach((page) => {
+            const section = document.createElement('section');
+            section.className = 'ocr-page';
+            const heading = document.createElement('h3');
+            const method = page.method === 'ocr' ? 'OCR text' : 'PDF text';
+            heading.textContent = `Page ${page.page_number || 1} · ${method}`;
+            const text = document.createElement('pre');
+            text.textContent = page.text || '(No readable text found on this page.)';
+            section.append(heading, text);
+            ocrPages.append(section);
+          });
+          ocrResults.hidden = false;
+          ocrStatus.textContent = data.truncated
+            ? 'Preview ready. Output was shortened to stay within the safe limit; verify against the original.'
+            : 'Preview ready. Verify all text against the original document.';
+        } catch (error) {
+          ocrStatus.textContent = error instanceof Error
+            ? error.message
+            : 'The local extraction could not be completed.';
+        } finally {
+          ocrButton.disabled = false;
+          clearOcrButton.disabled = false;
+        }
+      });
+
       fetch('/service-info', { headers: { 'Accept': 'application/json' } })
         .then((response) => response.ok ? response.json() : null)
         .then((info) => {
@@ -517,6 +643,9 @@
           document.getElementById('engineBadge').textContent = info.offline_mode
             ? 'Offline · no cloud model'
             : 'Hosted model · keep data private';
+          if (info.local_document_ocr_available === true) {
+            document.getElementById('localOcrSection').hidden = false;
+          }
         })
         .catch(() => {});
     })();
