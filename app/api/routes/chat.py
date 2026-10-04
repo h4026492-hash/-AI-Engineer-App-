@@ -12,6 +12,7 @@ from fastapi.responses import StreamingResponse
 from app.api.deps import AppState, get_app_state
 from app.core.errors import ProviderError, ValidationError
 from app.core.logging import get_logger
+from app.core.medical_safety import EDUCATIONAL_FOOTER, screen_medical_question
 from app.schemas.chat import ChatRequest, ChatResponse, Citation
 from app.schemas.common import ApiResponse
 
@@ -46,6 +47,26 @@ async def chat(
     state: Annotated[AppState, Depends(get_app_state)],
 ) -> ApiResponse[ChatResponse]:
     question = _guard_question(payload.question, state.settings.max_question_chars)
+    safety_reply = screen_medical_question(question)
+
+    if safety_reply is not None:
+        return ApiResponse(
+            data=ChatResponse(
+                question=question,
+                answer=safety_reply,
+                citations=[],
+                grounded=False,
+                provider=cast(Literal["echo", "openai"], state.provider),
+                latency_ms=0.0,
+                tokens_in=0,
+                tokens_out=0,
+            ),
+            meta={
+                "retrieved_chunks": 0,
+                "indexed_chunks": len(state.store),
+                "model": "safety-gate",
+            },
+        )
 
     result = await state.pipeline.ask(
         question,
@@ -60,7 +81,7 @@ async def chat(
     return ApiResponse(
         data=ChatResponse(
             question=question,
-            answer=result.answer,
+            answer=result.answer + EDUCATIONAL_FOOTER,
             citations=citations,
             grounded=result.grounded,
             provider=cast(Literal["echo", "openai"], state.provider),
@@ -92,15 +113,43 @@ async def chat_stream(
 ) -> StreamingResponse:
     question = _guard_question(payload.question, state.settings.max_question_chars)
     pipeline = state.pipeline
+    safety_reply = screen_medical_question(question)
 
     async def event_source() -> AsyncIterator[str]:
+        if safety_reply is not None:
+            safe_events = [
+                ("sources", {"grounded": False, "citations": []}),
+                ("delta", {"text": safety_reply}),
+                (
+                    "done",
+                    {
+                        "answer": safety_reply,
+                        "grounded": False,
+                        "latency_ms": 0.0,
+                        "provider": "safety-gate",
+                        "tokens_in": 0,
+                        "tokens_out": 0,
+                    },
+                ),
+            ]
+            for event_name, event_data in safe_events:
+                yield f"event: {event_name}\ndata: {json.dumps(event_data, ensure_ascii=False)}\n\n"
+            return
+
         try:
             async for event in pipeline.ask_stream(
                 question,
                 top_k=payload.top_k,
                 filter_source=payload.filter_source,
             ):
-                yield f"event: {event.event}\ndata: {json.dumps(event.data, ensure_ascii=False)}\n\n"
+                if event.event == "done":
+                    answer = str(event.data.get("answer", "")) + EDUCATIONAL_FOOTER
+                    delta_data = {"text": EDUCATIONAL_FOOTER}
+                    yield f"event: delta\ndata: {json.dumps(delta_data, ensure_ascii=False)}\n\n"
+                    event_data = {**event.data, "answer": answer}
+                    yield f"event: done\ndata: {json.dumps(event_data, ensure_ascii=False)}\n\n"
+                else:
+                    yield f"event: {event.event}\ndata: {json.dumps(event.data, ensure_ascii=False)}\n\n"
         except ProviderError as exc:
             # The response has already started, so a non-2xx status is no longer
             # possible. Surface the failure as an in-band event instead.

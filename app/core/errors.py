@@ -45,6 +45,13 @@ class NotFoundError(AppError):
     code = "not_found"
 
 
+class ForbiddenError(AppError):
+    """The current deployment does not permit this operation."""
+
+    status_code = 403
+    code = "forbidden"
+
+
 class PayloadTooLargeError(AppError):
     """Input exceeded a configured size limit."""
 

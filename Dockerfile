@@ -46,6 +46,6 @@ EXPOSE 8000
 
 # Liveness probe against the endpoint the app actually serves.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-    CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2).status == 200 else 1)"
+    CMD python -c "import os,sys,urllib.request; url='http://127.0.0.1:'+os.getenv('PORT','8000')+'/health'; sys.exit(0 if urllib.request.urlopen(url, timeout=2).status == 200 else 1)"
 
 ENTRYPOINT ["/entrypoint.sh"]

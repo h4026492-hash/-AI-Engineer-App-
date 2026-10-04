@@ -4,7 +4,7 @@ PYTHON ?= python
 APP_MODULE := app.main:app
 HOST ?= 0.0.0.0
 PORT ?= 8000
-QUESTION ?= "What is the refund window?"
+QUESTION ?= "What does an out-of-range lab test result mean in general?"
 TOP_K ?= 5
 
 help: ## Show this help

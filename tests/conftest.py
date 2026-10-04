@@ -62,6 +62,7 @@ def test_settings(tmp_path: Path) -> Settings:
         vector_store_path=str(tmp_path / "vectorstore"),
         seed_on_startup=False,
         rate_limit_per_minute=0,
+        allow_document_management=True,
         cors_origins="http://testserver",
     )
 

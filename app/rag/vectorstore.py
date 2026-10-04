@@ -18,7 +18,7 @@ import threading
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 from numpy.typing import NDArray
@@ -56,7 +56,7 @@ def normalise_rows(matrix: NDArray[np.float32]) -> NDArray[np.float32]:
     """L2-normalise each row. Zero rows are left as zeros."""
     norms = np.linalg.norm(matrix, axis=1, keepdims=True)
     safe = np.where(norms == 0, 1.0, norms)
-    return (matrix / safe).astype(np.float32)
+    return cast(NDArray[np.float32], (matrix / safe).astype(np.float32))
 
 
 class VectorStore:

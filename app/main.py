@@ -15,7 +15,7 @@ from typing import Any
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 
 from app import __version__
 from app.api.deps import AppState
@@ -31,6 +31,17 @@ from app.rag.vectorstore import VectorStore
 logger = get_logger(__name__)
 
 SAMPLE_DOCS_DIR = Path("data/sample_docs")
+SAMPLE_SOURCE_METADATA: dict[str, dict[str, str]] = {
+    "lab-results.md": {
+        "publisher": "MedlinePlus / U.S. National Library of Medicine",
+        "source_url": "https://medlineplus.gov/lab-tests/how-to-understand-your-lab-results/",
+    },
+    "medication-safety.md": {
+        "publisher": "U.S. Food and Drug Administration",
+        "source_url": "https://www.fda.gov/drugs/resources-drugs/drug-interactions-what-you-should-know",
+        "additional_source_url": "https://www.fda.gov/consumers/consumer-updates/5-medication-safety-tips-older-adults",
+    },
+}
 
 
 async def seed_sample_documents(pipeline: RAGPipeline, directory: Path = SAMPLE_DOCS_DIR) -> int:
@@ -42,7 +53,9 @@ async def seed_sample_documents(pipeline: RAGPipeline, directory: Path = SAMPLE_
         text = path.read_text(encoding="utf-8")
         if not text.strip():
             continue
-        await pipeline.ingest(text, source=path.name, metadata={"seeded": True})
+        metadata: dict[str, Any] = {"seeded": True}
+        metadata.update(SAMPLE_SOURCE_METADATA.get(path.name, {}))
+        await pipeline.ingest(text, source=path.name, metadata=metadata)
         count += 1
     if count:
         logger.info("sample_documents_seeded count=%d directory=%s", count, directory)
@@ -117,8 +130,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         title=settings.app_name,
         version=__version__,
         description=(
-            "Retrieval-augmented question answering over your own documents, with "
-            "citations, pluggable model providers, and an offline mode that needs no API key."
+            "A privacy-first health education demo that explains general medical "
+            "information in plain language with citations to public sources. It is "
+            "not a diagnostic tool and does not provide personal medication guidance."
         ),
         lifespan=lifespan,
         docs_url="/docs",
@@ -144,8 +158,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(documents.router)
     app.include_router(chat.router)
 
-    @app.get("/", tags=["operational"], summary="Service information")
-    async def root() -> JSONResponse:
+    @app.get("/", include_in_schema=False)
+    async def root() -> FileResponse:
+        """Serve the single-page, accessible web demo."""
+        return FileResponse(Path(__file__).parent / "static" / "index.html", media_type="text/html")
+
+    @app.get("/service-info", tags=["operational"], summary="Non-sensitive service information")
+    async def service_info() -> JSONResponse:
         state: AppState = app.state.app_state
         return JSONResponse(
             {
@@ -157,6 +176,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "indexed_chunks": len(state.store),
                 "docs": "/docs",
                 "health": "/health",
+                "mode": (
+                    "read-only education demo"
+                    if not settings.allow_document_management
+                    else "trusted local document-management mode"
+                ),
             }
         )
 

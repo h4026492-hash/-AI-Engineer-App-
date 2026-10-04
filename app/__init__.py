@@ -1,4 +1,4 @@
-"""ai-engineer-app: a production-shaped RAG chat service.
+"""Family MedGuard: a source-grounded health-education demo.
 
 The package is organised by layer rather than by feature, so each layer can be
 tested and swapped independently:
@@ -17,6 +17,6 @@ from importlib.metadata import PackageNotFoundError, version
 try:  # installed as a package
     __version__ = version("ai-engineer-app")
 except PackageNotFoundError:  # running from a source checkout
-    __version__ = "0.1.0"
+    __version__ = "0.2.0"
 
 __all__ = ["__version__"]
