@@ -119,6 +119,25 @@ def test_echo_model_extracts_from_context() -> None:
     assert result.usage.total_tokens > 0
 
 
+def test_echo_model_does_not_return_markdown_headings_as_answer() -> None:
+    context = (
+        "# Reading medicine labels and asking safer questions\n\n"
+        "## What a medicine label can tell you\n\n"
+        "A nonprescription medicine label includes active ingredients, uses, warnings, and directions.\n\n"
+        "## Where to ask\n\n"
+        "Ask a pharmacist about questions on a medicine label."
+    )
+    messages = [
+        ChatMessage(role="system", content=f"Instructions.\n\n{CONTEXT_HEADER}\n{context}"),
+        ChatMessage(role="user", content="What should I ask about a medicine label?"),
+    ]
+
+    answer = asyncio.run(EchoChatModel().complete(messages)).text
+
+    assert "#" not in answer
+    assert "Ask a pharmacist about questions on a medicine label." in answer
+
+
 def test_echo_model_never_quotes_its_own_instructions() -> None:
     # Regression guard: evidence is only the text after CONTEXT_HEADER. Using the
     # whole system message lets the prompt's own examples be quoted back as

@@ -7,7 +7,10 @@ app safe for protected health information or medical decision support.
 ## Current scope
 
 - Public, non-patient-specific education over a tiny reviewed corpus.
-- No account, profiles, saved chat history, cloud document uploads, or EHR connection.
+- No accounts, real/persistent profiles, saved chat history, cloud document
+  uploads, or EHR connection.
+- The fixed synthetic profile selector is available only on loopback development
+  with the offline provider and is hidden in production.
 - Local deterministic provider (`LLM_PROVIDER=echo`) only.
 - Document ingestion and deletion disabled (`ALLOW_DOCUMENT_MANAGEMENT=false`).
 - Local OCR is disabled (`ALLOW_LOCAL_DOCUMENT_OCR=false`) and is blocked in
@@ -45,7 +48,8 @@ retains more information than the privacy notice describes.
    the routes required for the demo.
 4. Confirm write operations return `403`: `POST /v1/documents` and
    `DELETE /v1/documents/{document_id}`. Confirm `POST /v1/local/ocr-preview`
-   also returns `403` in production.
+   also returns `403` in production. `GET /service-info` must report
+   `local_synthetic_profiles_available=false` on a public host.
 5. Smoke-test `GET /`, `/health`, `/health/ready`, `/service-info`, and the
    sample prompts in the UI. Verify that answers show clickable official sources,
    personal medication questions are handed off, and current-emergency wording

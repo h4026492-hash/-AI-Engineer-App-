@@ -31,11 +31,12 @@ class ChatRequest(BaseModel):
     )
 
     model_config = {
+        "extra": "forbid",
         "json_schema_extra": {
             "examples": [
                 {"question": "How do I reset my password?", "top_k": 4, "include_context": True}
             ]
-        }
+        },
     }
 
 

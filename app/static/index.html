@@ -37,10 +37,10 @@
       line-height: 1.55;
       text-rendering: optimizeLegibility;
     }
-    button, textarea { font: inherit; }
+    button, textarea, select { font: inherit; }
     button, a { -webkit-tap-highlight-color: transparent; }
     a { color: var(--teal-dark); }
-    a:focus-visible, button:focus-visible, textarea:focus-visible {
+    a:focus-visible, button:focus-visible, textarea:focus-visible, select:focus-visible {
       outline: 3px solid #e4a64c;
       outline-offset: 3px;
     }
@@ -111,6 +111,14 @@
     h2.section-title { margin: 7px 0 0; font-size: clamp(27px, 3vw, 36px); line-height: 1.12; letter-spacing: -.045em; }
     .section-intro { max-width: 490px; margin: 0; color: var(--muted); font-size: 14px; }
     .workspace-section { padding: 30px 0 88px; scroll-margin-top: 28px; }
+    .profile-demo-strip { display: grid; grid-template-columns: minmax(210px, .8fr) 1.2fr; align-items: center; gap: 20px; margin: -2px 0 18px; border: 1px solid #e9d8b0; border-radius: 16px; background: #fff8e9; padding: 16px 18px; }
+    .profile-demo-strip[hidden] { display: none !important; }
+    .profile-demo-strip strong { display: block; color: #624a21; font-size: 14px; }
+    .profile-demo-strip p { margin: 5px 0 0; color: #725d3b; font-size: 12px; line-height: 1.5; }
+    .profile-demo-control { display: grid; gap: 6px; }
+    .profile-demo-control label { color: #624a21; font-size: 12px; font-weight: 800; }
+    .profile-demo-control select { width: 100%; min-height: 43px; border: 1px solid #d8c79f; border-radius: 10px; background: white; color: var(--ink); padding: 8px 11px; }
+    .profile-demo-status { margin: 0 !important; min-height: 1.4em; color: var(--ink-2) !important; }
     .workspace-shell { display: grid; grid-template-columns: 300px minmax(0, 1fr); align-items: stretch; gap: 18px; }
     .starter-panel, .chat-panel { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
     .starter-panel { padding: 23px 19px; }
@@ -144,7 +152,8 @@
     .message.user .bubble { border-color: #c5ddd0; border-radius: 16px 4px 16px 16px; background: #e9f3ec; color: var(--ink); }
     .citation-block { margin: 11px 0 0; padding-top: 11px; border-top: 1px solid #e0e9e1; }
     .citation-label { margin: 0 0 7px; color: var(--muted); font-size: 10px; font-weight: 850; letter-spacing: .09em; text-transform: uppercase; }
-    .citation-link { display: inline-flex; align-items: center; gap: 6px; margin: 3px 5px 3px 0; border: 1px solid #d9e7dd; border-radius: 999px; background: white; padding: 5px 9px; color: var(--teal-dark); font-size: 11px; font-weight: 750; text-decoration: none; }
+    .citation-links { display: flex; flex-wrap: wrap; gap: 7px; }
+    .citation-link { display: inline-flex; align-items: center; gap: 6px; margin: 0; border: 1px solid #d9e7dd; border-radius: 999px; background: white; padding: 5px 9px; color: var(--teal-dark); font-size: 11px; font-weight: 750; text-decoration: none; }
     .citation-link:hover { border-color: var(--teal); background: #f4faf5; }
     .not-grounded { border-left: 3px solid var(--gold); padding-left: 10px; color: #745717; font-size: 12px; }
     .thinking { display: inline-flex; align-items: center; gap: 9px; padding: 11px 14px; border: 1px solid #e5ebe6; border-radius: 5px 14px 14px 14px; background: #f7faf7; color: var(--muted); font-size: 13px; }
@@ -213,6 +222,7 @@
       .section-heading { display: block; }
       .section-intro { margin-top: 9px; }
       .workspace-section { padding: 20px 0 65px; }
+      .profile-demo-strip { grid-template-columns: 1fr; gap: 12px; margin-top: 12px; padding: 14px; }
       .chat-panel { min-height: 620px; }
       .chat-header { padding: 15px; }
       .chat-log { padding: 18px 14px 8px; }
@@ -283,6 +293,23 @@
       <div class="section-heading">
         <div><span class="section-kicker">Try a safe example</span><h2 class="section-title" id="workspace-title">Ask a general health question</h2></div>
         <p class="section-intro">Answers use the small set of public references listed below. If the sources don't cover a question, the demo should say so.</p>
+      </div>
+      <div class="profile-demo-strip" id="profileDemoStrip" hidden role="group" aria-labelledby="profileBannerTitle">
+        <div>
+          <strong id="profileBannerTitle">Synthetic demo profile — never enter real health information</strong>
+          <p>These fictional labels are for a user-interface experiment only. They do not represent real people.</p>
+        </div>
+        <div class="profile-demo-control">
+          <label for="demoProfileSelect">Choose a fictional demo label</label>
+          <select id="demoProfileSelect" aria-describedby="profileDemoDescription">
+            <option value="" disabled selected>Choose a demo label</option>
+            <option value="demo-a">Demo Person A</option>
+            <option value="demo-b">Demo Person B</option>
+          </select>
+          <p id="profileDemoDescription">Switching labels clears the visible conversation. The selection does not personalize answers and is not sent to the service or saved.</p>
+          <button class="text-toggle" id="clearDemoSession" type="button">Clear demo session</button>
+          <p class="profile-demo-status" id="profileStatus" role="status" aria-live="polite"></p>
+        </div>
       </div>
       <div class="workspace-shell">
         <aside class="starter-panel" aria-labelledby="starter-title">
@@ -392,6 +419,12 @@
       const ocrSummary = document.getElementById('ocrSummary');
       const ocrPages = document.getElementById('ocrPages');
       const clearOcrButton = document.getElementById('clearOcrButton');
+      const demoProfileSelect = document.getElementById('demoProfileSelect');
+      const clearDemoSessionButton = document.getElementById('clearDemoSession');
+      const profileStatus = document.getElementById('profileStatus');
+      const welcomeMessage = log.firstElementChild.cloneNode(true);
+      let activeChatController = null;
+      let activeOcrController = null;
 
       const escapeSourceUrl = (value) => {
         try {
@@ -434,33 +467,36 @@
           content.append(hint);
         }
 
-        const validCitations = citations.filter((item) => item && item.metadata && escapeSourceUrl(item.metadata.source_url));
-        if (kind === 'assistant' && validCitations.length) {
+        const sourceLinks = new Map();
+        citations.forEach((item) => {
+          if (!item || !item.metadata) return;
+          const sourceUrl = escapeSourceUrl(item.metadata.source_url);
+          if (sourceUrl && !sourceLinks.has(sourceUrl)) {
+            sourceLinks.set(sourceUrl, item.metadata.publisher || item.source || 'Reference source');
+          }
+          const additionalUrl = escapeSourceUrl(item.metadata.additional_source_url);
+          if (additionalUrl && !sourceLinks.has(additionalUrl)) {
+            sourceLinks.set(additionalUrl, 'FDA · 5 Medication Safety Tips for Older Adults');
+          }
+        });
+        if (kind === 'assistant' && sourceLinks.size) {
           const block = document.createElement('div');
           block.className = 'citation-block';
           const label = document.createElement('p');
           label.className = 'citation-label';
           label.textContent = 'Public sources';
-          block.append(label);
-          validCitations.forEach((item) => {
+          const links = document.createElement('div');
+          links.className = 'citation-links';
+          sourceLinks.forEach((publisher, url) => {
             const link = document.createElement('a');
             link.className = 'citation-link';
-            link.href = escapeSourceUrl(item.metadata.source_url);
+            link.href = url;
             link.target = '_blank';
             link.rel = 'noopener noreferrer';
-            link.textContent = item.metadata.publisher || item.source || 'Reference source';
-            block.append(link);
-            const extra = escapeSourceUrl(item.metadata.additional_source_url);
-            if (extra) {
-              const extraLink = document.createElement('a');
-              extraLink.className = 'citation-link';
-              extraLink.href = extra;
-              extraLink.target = '_blank';
-              extraLink.rel = 'noopener noreferrer';
-              extraLink.textContent = 'Additional FDA source';
-              block.append(extraLink);
-            }
+            link.textContent = publisher;
+            links.append(link);
           });
+          block.append(label, links);
           content.append(block);
         }
         article.append(icon, content);
@@ -510,6 +546,34 @@
       });
       window.addEventListener('resize', () => { if (largerTextEnabled) applyTextSize(); });
 
+      function clearDemoState() {
+        if (activeChatController) {
+          activeChatController.abort();
+          activeChatController = null;
+        }
+        const thinking = document.getElementById('thinkingMessage');
+        if (thinking) thinking.remove();
+        input.disabled = false;
+        sendButton.disabled = false;
+        input.value = '';
+        count.textContent = '0 / 2,000';
+        log.replaceChildren(welcomeMessage.cloneNode(true));
+        log.scrollTop = 0;
+        clearOcrPreview();
+      }
+
+      demoProfileSelect.addEventListener('change', () => {
+        clearDemoState();
+        const selectedLabel = demoProfileSelect.selectedOptions[0]?.textContent || 'Demo profile';
+        profileStatus.textContent = `${selectedLabel} selected. The visible conversation was cleared; answers remain generic.`;
+      });
+
+      clearDemoSessionButton.addEventListener('click', () => {
+        demoProfileSelect.value = '';
+        clearDemoState();
+        profileStatus.textContent = 'Demo session cleared. No demo label is selected; answers remain generic.';
+      });
+
       document.querySelectorAll('.prompt-button').forEach((button) => {
         button.addEventListener('click', () => {
           input.value = button.dataset.question || '';
@@ -527,14 +591,18 @@
         count.textContent = '0 / 2,000';
         input.disabled = true;
         sendButton.disabled = true;
+        const controller = new AbortController();
+        activeChatController = controller;
         const thinking = appendThinking();
         try {
           const response = await fetch('/v1/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify({ question, top_k: 3, include_context: false })
+            body: JSON.stringify({ question, top_k: 2, include_context: false }),
+            signal: controller.signal
           });
           const body = await response.json();
+          if (controller.signal.aborted || activeChatController !== controller) return;
           thinking.remove();
           if (!response.ok) {
             const message = body && body.error && body.error.message ? body.error.message : 'The demo could not answer right now.';
@@ -545,15 +613,26 @@
           appendMessage('assistant', data.answer || 'No answer was returned.', data.citations || [], Boolean(data.grounded), body.meta && body.meta.model === 'safety-gate');
         } catch (error) {
           thinking.remove();
+          if (controller.signal.aborted || activeChatController !== controller) return;
+          if (error && typeof error === 'object' && 'name' in error && error.name === 'AbortError') return;
           appendMessage('assistant', 'I could not reach the demo service. Please try again in a moment.', [], false);
         } finally {
-          input.disabled = false;
-          sendButton.disabled = false;
-          input.focus();
+          if (activeChatController === controller) {
+            activeChatController = null;
+            input.disabled = false;
+            sendButton.disabled = false;
+            if (!controller.signal.aborted) input.focus();
+          }
         }
       });
 
       function clearOcrPreview() {
+        if (activeOcrController) {
+          activeOcrController.abort();
+          activeOcrController = null;
+        }
+        ocrButton.disabled = false;
+        clearOcrButton.disabled = false;
         ocrFile.value = '';
         ocrPages.replaceChildren();
         ocrSummary.textContent = '';
@@ -590,6 +669,8 @@
         ocrStatus.textContent = 'Extracting text locally…';
         ocrButton.disabled = true;
         clearOcrButton.disabled = true;
+        const controller = new AbortController();
+        activeOcrController = controller;
         try {
           const response = await fetch('/v1/local/ocr-preview', {
             method: 'POST',
@@ -597,9 +678,11 @@
               'Accept': 'application/json',
               'Content-Type': file.type || 'application/octet-stream'
             },
-            body: file
+            body: file,
+            signal: controller.signal
           });
           const body = await response.json();
+          if (controller.signal.aborted || activeOcrController !== controller) return;
           if (!response.ok) {
             const message = body && body.error && body.error.message
               ? body.error.message
@@ -625,12 +708,17 @@
             ? 'Preview ready. Output was shortened to stay within the safe limit; verify against the original.'
             : 'Preview ready. Verify all text against the original document.';
         } catch (error) {
+          if (controller.signal.aborted || activeOcrController !== controller) return;
+          if (error && typeof error === 'object' && 'name' in error && error.name === 'AbortError') return;
           ocrStatus.textContent = error instanceof Error
             ? error.message
             : 'The local extraction could not be completed.';
         } finally {
-          ocrButton.disabled = false;
-          clearOcrButton.disabled = false;
+          if (activeOcrController === controller) {
+            activeOcrController = null;
+            ocrButton.disabled = false;
+            clearOcrButton.disabled = false;
+          }
         }
       });
 
@@ -643,6 +731,9 @@
           document.getElementById('engineBadge').textContent = info.offline_mode
             ? 'Offline · no cloud model'
             : 'Hosted model · keep data private';
+          if (info.local_synthetic_profiles_available === true) {
+            document.getElementById('profileDemoStrip').hidden = false;
+          }
           if (info.local_document_ocr_available === true) {
             document.getElementById('localOcrSection').hidden = false;
           }

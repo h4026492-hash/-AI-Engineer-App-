@@ -18,6 +18,9 @@ locally without a cloud model or API key.
 ## What works in this first slice
 
 - Responsive, keyboard-accessible explainer UI with a larger-text control.
+- Local-development-only synthetic profile switcher with two fixed fictional
+  labels; switching clears the visible conversation and sends no profile data
+  to the API. It is hidden on public or hosted deployments.
 - General explanations grounded in a deliberately small public-source corpus.
 - Clickable source links to FDA and MedlinePlus.
 - Offline extractive model and local feature-hashing retrieval; no cloud API key
@@ -30,11 +33,13 @@ locally without a cloud model or API key.
   Docker, tests, and a retrieval evaluation harness.
 
 The bundled reference summaries cover only basic medicine-label safety and the
-meaning of lab reference ranges. There is no dose calculator, medication
-interaction database, patient profile, EHR integration, or saved chat history.
-The public demo has no upload feature. A separate, explicitly opt-in OCR preview
-is available only to a localhost request in development; it extracts text from
-small PDFs/PNG/JPEG files but does not interpret, index, or save them.
+meaning of lab reference ranges. The profile selector is a UI-only synthetic
+experiment, not a patient profile: it has no real profile fields, persistence,
+or personalized answers. There is no dose calculator, medication interaction
+database, EHR integration, or saved chat history. The public demo has no upload
+feature. A separate, explicitly opt-in OCR preview is available only to a
+localhost request in development; it extracts text from small PDFs/PNG/JPEG
+files but does not interpret, index, or save them.
 
 ## Run locally
 
@@ -108,6 +113,11 @@ before retrieval; the gate is a prototype safeguard, not a medical classifier.
 - Document changes are disabled by default (`ALLOW_DOCUMENT_MANAGEMENT=false`).
   The API has no user authentication; do not enable writes on an internet-facing
   instance.
+- The profile selector is only a synthetic UX demo: fixed fictional labels
+  never affect answers or leave the browser, no profile data is sent to the
+  service, and switching labels clears the displayed conversation. It appears
+  only on localhost in development with the offline engine; it is hidden on
+  public/hosted deployments. It is not a real profile or memory feature.
 - The public demo does not expose uploads or patient accounts. The optional
   OCR preview requires `ALLOW_LOCAL_DOCUMENT_OCR=true`, a development
   environment, and a loopback client/host; it is blocked in production and from
@@ -151,10 +161,13 @@ accuracy, safety, or fitness for care.
 
 ## Deployment status and next steps
 
-The first Family MedGuard demo has been merged into the public GitHub `main`
-branch. This optional OCR iteration is being developed separately and is not yet
-published. **A permanent public URL has not been deployed from this workspace.**
-Before sharing a live demo, review `docs/LAUNCH_CHECKLIST.md`, set production
+The Family MedGuard demo and opt-in local OCR code are on the public GitHub
+`main` branch. The synthetic profile-switcher prototype is implemented on a
+separate feature branch; it is limited to loopback development with the offline
+engine and does not add real profiles, persistence, or personalization. It has
+not been merged or deployed. **A permanent public URL has not been deployed
+from this workspace.** Before sharing a live demo, review
+`docs/LAUNCH_CHECKLIST.md`, set production
 configuration, and verify every safety and privacy statement against the actual
 host. Keep local OCR disabled on public hosts. Any real clinical use would
 require substantially more work: clinical review, validated sources and updates,
@@ -177,6 +190,10 @@ RAG pipeline ──▶ local feature-hashing index ──▶ offline extractive 
 Localhost development only:
 Browser file ──▶ /v1/local/ocr-preview ──▶ in-memory PDF/image text extraction
                                       └── raw text preview; not indexed or sent to a model
+
+The synthetic profile selector is browser-only UI state and is revealed only
+for loopback development with the offline engine. It is not included in API
+requests; changing labels clears the visible chat and local OCR preview.
 ```
 
 Core modules are separated by responsibility: `app/api` defines the HTTP

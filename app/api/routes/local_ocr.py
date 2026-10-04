@@ -39,13 +39,8 @@ def _size_limit_message(limit: int) -> str:
     return f"Files must be {limit:,} bytes or smaller."
 
 
-def is_local_ocr_request(request: Request, state: AppState) -> bool:
-    """Fail closed unless opted in from a loopback client and local host."""
-    if not state.settings.allow_local_document_ocr:
-        return False
-    if state.settings.app_env is not Environment.DEVELOPMENT:
-        return False
-
+def is_loopback_request(request: Request) -> bool:
+    """Return true only for localhost URLs and loopback peer addresses."""
     hostname = (request.url.hostname or "").lower().rstrip(".")
     if hostname not in {"localhost", "127.0.0.1", "::1"}:
         return False
@@ -57,6 +52,15 @@ def is_local_ocr_request(request: Request, state: AppState) -> bool:
         return ipaddress.ip_address(client.host).is_loopback
     except ValueError:
         return False
+
+
+def is_local_ocr_request(request: Request, state: AppState) -> bool:
+    """Fail closed unless OCR is opted in for a loopback development request."""
+    return (
+        state.settings.allow_local_document_ocr
+        and state.settings.app_env is Environment.DEVELOPMENT
+        and is_loopback_request(request)
+    )
 
 
 async def _read_limited_body(request: Request, limit: int) -> bytes:

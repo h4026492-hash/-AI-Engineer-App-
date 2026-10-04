@@ -31,7 +31,8 @@ NO_ANSWER = "I could not find anything relevant in the indexed documents to answ
 
 
 def _sentences(text: str) -> list[str]:
-    return [part.strip() for part in _SENTENCE_SPLIT.split(text) if part and part.strip()]
+    parts = [part.strip() for part in _SENTENCE_SPLIT.split(text) if part and part.strip()]
+    return [part for part in parts if not re.match(r"^#{1,6}\s", part)]
 
 
 class EchoChatModel:
