@@ -30,6 +30,7 @@ def test_root_serves_web_demo_and_service_info(client: TestClient) -> None:
     assert body["name"] == "Family MedGuard"
     assert body["provider"] == "echo"
     assert body["offline_mode"] is True
+    assert body["local_document_ocr_available"] is False
     assert body["docs"] == "/docs"
 
 
@@ -59,9 +60,10 @@ def test_request_id_is_generated_and_honoured(client: TestClient) -> None:
     assert failure.json()["request_id"] == "trace-me-456"
 
 
-def test_document_management_defaults_to_disabled() -> None:
+def test_document_management_and_local_ocr_default_to_disabled() -> None:
     settings = Settings(_env_file=None)  # type: ignore[call-arg]
     assert settings.allow_document_management is False
+    assert settings.allow_local_document_ocr is False
     assert settings.public_config()["allow_document_management"] is False
 
 
@@ -77,7 +79,10 @@ def test_config_redacts_secrets(client: TestClient) -> None:
 def test_openapi_schema_is_served(client: TestClient) -> None:
     response = client.get("/openapi.json")
     assert response.status_code == 200
-    assert "/v1/chat" in response.json()["paths"]
+    schema = response.json()
+    assert "/v1/chat" in schema["paths"]
+    ocr = schema["paths"]["/v1/local/ocr-preview"]["post"]
+    assert "application/pdf" in ocr["requestBody"]["content"]
 
 
 # --- Documents -------------------------------------------------------------

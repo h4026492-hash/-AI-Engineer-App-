@@ -81,6 +81,10 @@ class Settings(BaseSettings):
     # Keep public demos read-only. Set true only for trusted local/admin use;
     # the document endpoints do not provide authentication on their own.
     allow_document_management: bool = False
+    # OCR is disabled by default and is additionally restricted to loopback
+    # requests in development; it must never be enabled for a public service.
+    allow_local_document_ocr: bool = False
+    max_local_ocr_bytes: int = Field(default=8 * 1024 * 1024, ge=1024, le=8 * 1024 * 1024)
 
     @field_validator("log_level")
     @classmethod

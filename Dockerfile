@@ -28,6 +28,12 @@ ENV PYTHONUNBUFFERED=1 \
 RUN groupadd --gid 1001 app \
     && useradd --uid 1001 --gid 1001 --create-home --shell /usr/sbin/nologin app
 
+# Local-only OCR uses the offline Tesseract executable. The API stays disabled
+# by default and refuses production/non-loopback requests even when installed.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends tesseract-ocr \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 COPY --from=builder /build/dist/*.whl /tmp/

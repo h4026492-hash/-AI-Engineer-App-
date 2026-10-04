@@ -7,9 +7,11 @@ app safe for protected health information or medical decision support.
 ## Current scope
 
 - Public, non-patient-specific education over a tiny reviewed corpus.
-- No account, upload, profile, saved chat history, OCR, or EHR connection.
+- No account, profiles, saved chat history, cloud document uploads, or EHR connection.
 - Local deterministic provider (`LLM_PROVIDER=echo`) only.
 - Document ingestion and deletion disabled (`ALLOW_DOCUMENT_MANAGEMENT=false`).
+- Local OCR is disabled (`ALLOW_LOCAL_DOCUMENT_OCR=false`) and is blocked in
+  production even if the setting is mistakenly enabled.
 - Clear limitation and emergency copy visible in the UI.
 
 Do not deploy if any of these safeguards are absent or if the hosting setup
@@ -30,6 +32,7 @@ retains more information than the privacy notice describes.
    HOST=0.0.0.0
    LLM_PROVIDER=echo
    ALLOW_DOCUMENT_MANAGEMENT=false
+   ALLOW_LOCAL_DOCUMENT_OCR=false
    RATE_LIMIT_PER_MINUTE=30
    SEED_ON_STARTUP=true
    ```
@@ -40,8 +43,9 @@ retains more information than the privacy notice describes.
 3. Serve behind the host's HTTPS endpoint. Confirm the service binds to the
    platform-provided port, accepts the public preview origin, and exposes only
    the routes required for the demo.
-4. Confirm that write operations return `403`:
-   `POST /v1/documents` and `DELETE /v1/documents/{document_id}`.
+4. Confirm write operations return `403`: `POST /v1/documents` and
+   `DELETE /v1/documents/{document_id}`. Confirm `POST /v1/local/ocr-preview`
+   also returns `403` in production.
 5. Smoke-test `GET /`, `/health`, `/health/ready`, `/service-info`, and the
    sample prompts in the UI. Verify that answers show clickable official sources,
    personal medication questions are handed off, and current-emergency wording
@@ -67,10 +71,10 @@ validation.
 
 ## Publishing the code vs. deploying the app
 
-The GitHub repository in the project brief is already public. This iteration
-is on the review branch `feature/family-medguard-web-mvp`; it is separate from
-`main` and does not itself deploy the application. No permanent cloud service
-has been provisioned from this workspace. Review the branch before merging, and
-configure a hosting account and environment variables separately if a live URL
-is wanted. Never put access tokens, patient data, or the confidential PDF in
-the repository.
+The GitHub repository is public, and the first Family MedGuard demo has been
+merged into `main`. The local OCR iteration is on `feature/family-medguard-local-ocr`;
+it does not itself deploy the application and has not yet been published. No
+permanent cloud service has been provisioned from this workspace. Review and
+publish the feature branch separately, and configure a hosting account and
+environment variables separately if a live URL is wanted. Never put access
+tokens, patient data, or the confidential PDF in the repository.

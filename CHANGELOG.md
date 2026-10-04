@@ -15,6 +15,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Public read-only default: document ingestion and deletion are disabled unless
   explicitly enabled for trusted local development.
 - Public launch checklist and health-domain retrieval evaluation cases.
+- Opt-in, localhost-only OCR preview for synthetic PDFs and images; outputs raw
+  text only and do not enter the RAG index or model context.
 
 ### Changed
 - App branding and default service metadata now identify Family MedGuard.
@@ -28,9 +30,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   current NumPy and mypy versions.
 
 ### Safety
+- OCR is opt-in and allowed only for development requests whose host and peer
+  are both loopback. It reads bounded input in memory, does not log document
+  text, does not persist or index it, and never calls a language model.
 - The supplied confidential blueprint was not copied into the repository.
-- No public deployment has been provisioned from this workspace. The project is
-  still a portfolio prototype, not a clinical tool.
+- No permanent public deployment has been provisioned from this workspace. The
+  project is still a portfolio prototype, not a clinical tool; do not use real
+  patient records even with local OCR.
 
 ## [0.1.0] - 2026-10-02
 
