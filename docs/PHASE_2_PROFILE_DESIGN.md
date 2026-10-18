@@ -1,11 +1,12 @@
 # Phase 2 design: family profiles and conversation continuity
 
-**Status: Phase 2A synthetic UX prototype implemented and locally validated.**
-The feature branch adds only the selector described here: two fixed fictional
-labels, volatile browser state, a clear-session action, and a conversation reset
-when switching. The selector is shown only for loopback development requests
-with the offline answer engine; it is hidden on public/hosted deployments. There
-is no profile API, database, account system, or personalized health behavior.
+**Status: Phase 2A synthetic UX prototype implemented, locally validated, and
+merged into `main`; not publicly deployed.** The implementation provides only
+the selector described here: two fixed fictional labels, volatile browser state,
+a clear-session action, and a conversation reset when switching. The selector
+is shown only for loopback development requests with the offline answer engine;
+it is hidden on public/hosted deployments. There is no profile API, database,
+account system, or personalized health behavior.
 
 The design below remains the gate for any future persistent profiles. Do not
 enter real names, dates of birth, medication lists, diagnoses, or individual lab
