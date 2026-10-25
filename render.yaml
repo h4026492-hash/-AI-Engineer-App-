@@ -1,0 +1,41 @@
+# Optional, opt-in Render Blueprint for the read-only portfolio demo.
+# This file does not deploy anything by itself. Review the service plan in
+# Render before approving a Blueprint instance. No database or persistent disk
+# is defined; auto-deploys are off to prevent unreviewed releases.
+services:
+  - type: web
+    name: family-medguard-readonly-demo
+    runtime: docker
+    region: ohio
+    plan: free
+    branch: main
+    autoDeployTrigger: 'off'
+    healthCheckPath: /health
+    envVars:
+      - key: APP_NAME
+        value: "Family MedGuard"
+      - key: APP_ENV
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: HOST
+        value: 0.0.0.0
+      - key: LLM_PROVIDER
+        value: echo
+      - key: LOG_LEVEL
+        value: INFO
+      - key: LOG_FORMAT
+        value: json
+      # The UI calls its API on the same origin, so CORS is not needed.
+      - key: CORS_ORIGINS
+        value: ""
+      - key: VECTOR_STORE_PATH
+        value: /tmp/family-medguard-vectorstore
+      - key: SEED_ON_STARTUP
+        value: "true"
+      - key: RATE_LIMIT_PER_MINUTE
+        value: "30"
+      - key: ALLOW_DOCUMENT_MANAGEMENT
+        value: "false"
+      - key: ALLOW_LOCAL_DOCUMENT_OCR
+        value: "false"

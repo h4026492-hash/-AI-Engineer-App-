@@ -75,10 +75,13 @@ validation.
 
 ## Publishing the code vs. deploying the app
 
-The GitHub repository is public, and the first Family MedGuard demo has been
-merged into `main`. The local OCR iteration is on `feature/family-medguard-local-ocr`;
-it does not itself deploy the application and has not yet been published. No
-permanent cloud service has been provisioned from this workspace. Review and
-publish the feature branch separately, and configure a hosting account and
-environment variables separately if a live URL is wanted. Never put access
-tokens, patient data, or the confidential PDF in the repository.
+The GitHub repository is public, and the Family MedGuard demo, opt-in local
+OCR code, and synthetic profile prototype are merged into `main`. OCR remains
+disabled by default and in production; the profile selector is shown only for
+loopback development with the offline provider. These features do not deploy
+the application. No permanent cloud service has been provisioned from this
+workspace. An optional, opt-in Render Blueprint is prepared in `render.yaml`,
+with setup and preflight steps in `docs/RENDER_DEPLOYMENT.md`; Render remains a
+proposal, not an approved or provisioned host. Review the target account,
+service plan, logs, and retention settings before approving any public service.
+Never put access tokens, patient data, or the confidential PDF in the repository.
