@@ -161,13 +161,12 @@ accuracy, safety, or fitness for care.
 
 ## Deployment status and next steps
 
-The Family MedGuard demo and opt-in local OCR code are on the public GitHub
-`main` branch. The synthetic profile-switcher prototype is implemented on a
-separate feature branch; it is limited to loopback development with the offline
-engine and does not add real profiles, persistence, or personalization. It has
-not been merged or deployed. **A permanent public URL has not been deployed
-from this workspace.** Before sharing a live demo, review
-`docs/LAUNCH_CHECKLIST.md`, set production
+The Family MedGuard demo, opt-in local OCR code, and synthetic profile-switcher
+prototype are on the public GitHub `main` branch. The selector is limited to
+loopback development with the offline engine; it adds no real profiles,
+persistence, or personalization and stays hidden on public/hosted deployments.
+**A permanent public URL has not been deployed from this workspace.** Before
+sharing a live demo, review `docs/LAUNCH_CHECKLIST.md`, set production
 configuration, and verify every safety and privacy statement against the actual
 host. Keep local OCR disabled on public hosts. Any real clinical use would
 require substantially more work: clinical review, validated sources and updates,
